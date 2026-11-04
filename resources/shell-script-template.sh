@@ -1,0 +1,192 @@
+#!/usr/bin/env bash
+
+__DIRECTOROO_MENU_INDEX=-1
+__DIRECTOROO_MENU_COUNT=0
+__DIRECTOROO_MENU_OPTIONS=()
+
+#-----------------------------------------------------------------------------------------------------------------------
+# Let the user pick onf of multiple directories interactively
+#-----------------------------------------------------------------------------------------------------------------------
+
+__directoroo_interactive_menu() {
+    __DIRECTOROO_MENU_SELECTED=${1:-}
+    __DIRECTOROO_MENU_COUNT=$(($# - 1))
+    __DIRECTOROO_MENU_OPTIONS=("${@:2}")
+
+    ESCAPE_SEQ=$'\033'
+    ARROW_UP=$'A'
+    ARROW_DOWN=$'B'
+
+    __directoroo_rerender_menu
+    while true; do
+        read -rsn 1 key1
+        case "$key1" in
+        "$ESCAPE_SEQ")
+            read -rsn 1 -t 0.1 key2
+            if [[ "$key2" == "[" ]]; then
+                read -rsn 1 -t 1 key3
+                case "$key3" in
+                "$ARROW_UP")
+                    if [ "$__DIRECTOROO_MENU_INDEX" -gt 0 ]; then
+                        __directoroo_change_menu_selection $((__DIRECTOROO_MENU_INDEX - 1))
+                    fi
+                    ;;
+                "$ARROW_DOWN")
+                    if [ "$__DIRECTOROO_MENU_INDEX" -lt "$(("$__DIRECTOROO_MENU_COUNT" - 1))" ]; then
+                        __directoroo_change_menu_selection $((__DIRECTOROO_MENU_INDEX + 1))
+                    fi
+                    ;;
+                esac
+            elif [[ "$key2" == "" ]]; then
+                unset __DIRECTOROO_MENU_SELECTED
+                return
+            fi
+            ;;
+        "q")
+            unset __DIRECTOROO_MENU_SELECTED
+            return
+            ;;
+        "")
+            export __DIRECTOROO_MENU_SELECTED
+            return
+            ;;
+        esac
+    done
+}
+
+#-----------------------------------------------------------------------------------------------------------------------
+# Re-render the menu
+#-----------------------------------------------------------------------------------------------------------------------
+
+__directoroo_rerender_menu() {
+    local __DIRECTOROO_MENU_COLOR_ACTIVE=0
+    local __DIRECTOROO_MENU_COLOR_ARROW=36
+    local counter=0
+    for i in "${__DIRECTOROO_MENU_OPTIONS[@]}"; do
+        if [ "$i" == "$__DIRECTOROO_MENU_SELECTED" ]; then
+            __DIRECTOROO_MENU_INDEX=$counter
+            echo -e "\033[${__DIRECTOROO_MENU_COLOR_ARROW}m>\033[0m \033[${__DIRECTOROO_MENU_COLOR_ACTIVE}m${i}\033[0m"
+        else
+            echo -e "  \e[2m${i}\e[22m"
+        fi
+        counter=$((counter + 1))
+    done
+}
+
+#-----------------------------------------------------------------------------------------------------------------------
+# Set the currently selected menu item
+#-----------------------------------------------------------------------------------------------------------------------
+
+__directoroo_change_menu_selection() {
+    local index=$1
+    if [ "$index" -ge $__DIRECTOROO_MENU_COUNT ]; then
+        index=$((__DIRECTOROO_MENU_COUNT - 1))
+    elif [ "$index" -lt 0 ]; then
+        index=0
+    fi
+    echo -e "\033[$((__DIRECTOROO_MENU_COUNT + 1))A"
+    __DIRECTOROO_MENU_SELECTED="${__DIRECTOROO_MENU_OPTIONS[index]}"
+    __directoroo_rerender_menu
+}
+
+#-----------------------------------------------------------------------------------------------------------------------
+# Unset all functions and environment variables
+#-----------------------------------------------------------------------------------------------------------------------
+
+function __directoroo_unset() {
+    unset -f __directoroo __directoroo_interactive_menu __directoroo_change_menu_selection __directoroo_rerender_menu __directoroo_unset
+    unset -v __DIRECTOROO_MENU_COUNT __DIRECTOROO_MENU_INDEX __DIRECTOROO_MENU_OPTIONS __DIRECTOROO_MENU_SELECTED
+}
+
+#-----------------------------------------------------------------------------------------------------------------------
+# Main program
+#-----------------------------------------------------------------------------------------------------------------------
+
+function __directoroo() {
+
+    #-------------------------------------------------------------------------------------------------------------------
+    # Determine if we run in "delegated" mode
+    #-------------------------------------------------------------------------------------------------------------------
+
+    local __DIRECTOROO_IS_DELEGATED=
+    if [[ "$1" == "__DIRECTOROO_IS_DELEGATED" ]]; then
+        __DIRECTOROO_IS_DELEGATED=true
+        shift
+    fi
+
+    #-------------------------------------------------------------------------------------------------------------------
+    # Handle non-shortcut and invalid invocations
+    #-------------------------------------------------------------------------------------------------------------------
+
+    if [[ $# -eq 0 ]]; then
+        # invoked without parameters - do nothing
+        __directoroo_unset
+        return 0
+    elif [[ $# -eq 1 && "$1" == "-" ]]; then
+        # invoked with "-" (go back to previous directory)
+        __directoroo_unset
+        if builtin cd -; then
+            return 0
+        else
+            return 1
+        fi
+    elif [[ $# -eq 1 && -d "$1" ]]; then
+        # the shortcut is not a shortcut but an actual directory
+        __directoroo_unset
+        if builtin cd "$1"; then
+            return 0
+        else
+            return 1
+        fi
+    elif [[ $# -gt 1 && -z "${__DIRECTOROO_IS_DELEGATED}" ]]; then
+        # too many parameters have been passed
+        __directoroo_unset
+        echo "ERROR: Too many arguments: ${SHORTCUT} $*" >&2
+        return 1
+    fi
+
+    #-------------------------------------------------------------------------------------------------------------------
+    # Extract the shortcut and the applicable directories
+    #-------------------------------------------------------------------------------------------------------------------
+
+    local SHORTCUT=$1
+    shift
+    local DIRECTORIES=("$@")
+
+    case ${SHORTCUT} in
+    # INSERT_RULES_HERE
+    esac
+
+    #-------------------------------------------------------------------------------------------------------------------
+    # Action the findings
+    #-------------------------------------------------------------------------------------------------------------------
+
+    if [[ -z "${__DIRECTOROO_IS_DELEGATED}" && -n "${DIRECTOROO_DELEGATE}" ]]; then
+        # There is another script to delegate to
+        __directoroo_unset
+        # shellcheck disable=SC1090
+        . "${DIRECTOROO_DELEGATE}" __DIRECTOROO_IS_DELEGATED "${SHORTCUT}" "${DIRECTORIES[@]}"
+    elif [[ "${#DIRECTORIES[@]}" -eq 0 ]]; then
+        # No directories configured for this shortcut, treat it as a directory
+        __directoroo_unset
+        builtin cd "${SHORTCUT?}" || return 1
+        return $?
+    elif [[ "${#DIRECTORIES[@]}" -eq 1 ]]; then
+        # This shortcut has only a single directory
+        __directoroo_unset
+        builtin cd "${DIRECTORIES[0]}" || return 1
+    else
+        # This shortcut has multiple directories
+        __directoroo_interactive_menu "${DIRECTORIES[0]}" "${DIRECTORIES[@]}"
+        local SELECTED_DIRECTORY=${__DIRECTOROO_MENU_SELECTED}
+        __directoroo_unset
+        if [[ -n "${SELECTED_DIRECTORY}" ]]; then
+            if [[ ! -d "${SELECTED_DIRECTORY}" ]]; then
+                echo ""
+            fi
+            builtin cd "${SELECTED_DIRECTORY}" || return 1
+        fi
+    fi
+}
+
+__directoroo "$@"

@@ -1,0 +1,4 @@
+h    :: home                  ::  vsc :: ${PE_HOME}
+dl   :: download              ::      :: ${PE_HOME}/Workspace/Download
+sc   :: shortycut (workspace) ::      :: ${PE_APPDATA}/Projects/shortycut
+sc   :: shortycut (global)    ::      :: ${PE_PROGRAMS}/Projects/shortycut/shortycut-global

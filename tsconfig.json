@@ -1,0 +1,1 @@
+{ "extends": "./.launchpad/tsconfig.default.json", "compilerOptions": { "types": ["node"] } }

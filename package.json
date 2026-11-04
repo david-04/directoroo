@@ -1,0 +1,12 @@
+{
+    "name": "directoroo",
+    "version": "0.0.0",
+    "private": true,
+    "license": "UNLICENSED",
+    "type": "module",
+    "dependencies": {
+        "@david-04/typefinity-cli": "^0.0.4",
+        "@types/node": "^26.6.6"
+    },
+    "swpm": "pnpm"
+}

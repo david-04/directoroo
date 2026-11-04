@@ -1,0 +1,38 @@
+{
+    "arrowParens": "avoid",
+    "ignorePatterns": [
+        "**/node_modules/**",
+        ".launchpad/**",
+        ".git/**"
+    ],
+    "objectWrap": "collapse",
+    "overrides": [
+        {
+            "files": [
+                "*.md",
+                "*.yml",
+                "*.yaml"
+            ],
+            "options": {
+                "tabWidth": 2
+            }
+        }
+    ],
+    "printWidth": 120,
+    "quoteProps": "consistent",
+    "sortImports": {
+        "groups": [
+            [
+                "import"
+            ],
+            [
+                "side_effect"
+            ]
+        ]
+    },
+    "sortPackageJson": {
+        "sortScripts": true
+    },
+    "tabWidth": 4,
+    "trailingComma": "es5"
+}

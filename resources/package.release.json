@@ -1,0 +1,13 @@
+{
+    "name": "directoroo",
+    "version": "1.0.0",
+    "description": "Generate directory shortcuts for different applications (shell/cd, VSCode Project Manager)",
+    "type": "module",
+    "keywords": ["shortcut", "shortcuts", "directory", "directories", "alias", "aliases"],
+    "homepage": "https://github.com/david-04/directoroo",
+    "bugs": { "url": "https://github.com/david-04/directoroo/issues" },
+    "license": "MIT",
+    "author": "David Hofmann",
+    "repository": { "type": "git", "url": "git+https://github.com/david-04/directoroo.git" },
+    "bin": { "directoroo": "directoroo.mjs" }
+}
